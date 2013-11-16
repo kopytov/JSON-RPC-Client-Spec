@@ -28,7 +28,7 @@ sub spec {
     return;
 }
 
-sub url { (caller)[0]->url(@_) }
+sub url { (caller)[0]->_url(@_) }
 
 1;
 
@@ -74,7 +74,7 @@ has state_params => (
 
 sub build_rpc_url {
     my $self = shift;
-    my $url = $self->url() || croak 'no url defined';
+    my $url = $self->_url() || croak 'no url defined';
     substr( $url, index( $url, ':' ), 3 )
       = '://' . $self->username() . ':' . $self->password() . '@'
       if $self->has_username();
@@ -99,7 +99,7 @@ sub build_rpc_client {
     return $client;
 }
 
-class_has url => (
+class_has _url => (
     is  => 'rw',
     isa => 'Str',
 );
@@ -114,9 +114,12 @@ sub params_spec {
     given ($#_) {
         when (0) { return $_[0]->_params_spec() }
         when (1) { return $_[0]->_params_spec()->{ $_[1] } }
-        default {
-            $_[0]->_params_spec()->{ $_[1] } = +{ @_[ 2 .. $#_ ] };
+        when (2) {
+            $_[0]->_params_spec()->{ $_[1] } = $_[2];
             return;
+        }
+        default {
+            croak 'excess arguments in spec';
         }
     }
 }
@@ -194,14 +197,14 @@ __END__
 
     url 'http://www.example.com/jsonrpc/API';
 
-    spec sum => (
+    spec sum => {
         a => { type => SCALAR },
         b => { type => SCALAR },
-    );
+    };
 
-    spec echo => (
+    spec echo => {
         msg => { type => SCALAR, optional => 1 },
-    );
+    };
 
     1;
 
